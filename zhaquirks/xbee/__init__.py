@@ -16,6 +16,7 @@ every x milliseconds, I recommend the later, since this will ensure
 the xbee stays alive in Home Assistant.
 """
 
+import asyncio
 import logging
 
 from zigpy.quirks import CustomDevice
@@ -25,6 +26,7 @@ from zigpy.zcl.clusters.general import (
     AnalogInput,
     AnalogOutput,
     BinaryInput,
+    DeviceTemperature,
     LevelControl,
     OnOff,
 )
@@ -47,6 +49,7 @@ XBEE_REMOTE_AT = 0x17
 XBEE_SRC_ENDPOINT = 0xE8
 ATTR_ON_OFF = 0x0000
 ATTR_PRESENT_VALUE = 0x0055
+ATTR_CURRENT_TEMPERATURE = 0x0000
 PIN_ANALOG_OUTPUT = 2
 
 
@@ -267,6 +270,12 @@ class XBeeCommon(CustomDevice):
             else:
                 super().handle_cluster_request(tsn, command_id, args)
 
+            asyncio.ensure_future(
+                self._endpoint.in_clusters[
+                    DeviceTemperature.cluster_id
+                ].read_attributes_raw([ATTR_CURRENT_TEMPERATURE])
+            )
+
         attributes = {0x0055: ("present_value", t.Bool)}
         client_commands = {0x0000: ("io_sample", (IOSample,), False)}
         server_commands = {0x0000: ("io_sample", (IOSample,), False)}
@@ -324,12 +333,26 @@ class XBeeCommon(CustomDevice):
         client_commands = {0x0000: ("send_data", (BinaryString,), None)}
         server_commands = {0x0000: ("receive_data", (BinaryString,), None)}
 
+    class XBeeDeviceTemperature(LocalDataCluster, DeviceTemperature):
+        """XBee Device Temperature Cluster."""
+
+        async def read_attributes_raw(self, attributes, manufacturer=None):
+            """Intercept current_temperature attribute read."""
+            if ATTR_CURRENT_TEMPERATURE in attributes:
+                current_temperature = await self._endpoint.device.remote_at("TP")
+                self._update_attribute(ATTR_CURRENT_TEMPERATURE, current_temperature)
+            return await super().read_attributes_raw(attributes, manufacturer)
+
     replacement = {
         ENDPOINTS: {
             232: {
                 "manufacturer": "XBEE",
                 "model": "xbee.io",
-                INPUT_CLUSTERS: [DigitalIOCluster, SerialDataCluster],
+                INPUT_CLUSTERS: [
+                    DigitalIOCluster,
+                    SerialDataCluster,
+                    XBeeDeviceTemperature,
+                ],
                 OUTPUT_CLUSTERS: [SerialDataCluster, EventRelayCluster],
             }
         }
