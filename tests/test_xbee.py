@@ -28,6 +28,8 @@ async def test_basic_cluster(zigpy_device_from_quirk):
     """Test Basic cluster."""
 
     xbee3_device = zigpy_device_from_quirk(XBee3Sensor)
+    assert xbee3_device.model == "XBee3"
+
     basic_cluster = xbee3_device.endpoints[XBEE_DATA_ENDPOINT].in_clusters[
         Basic.cluster_id
     ]
@@ -546,6 +548,7 @@ async def test_io_sample_report_on_at_response(zigpy_device_from_quirk):
     """Test update samples on non-native IS command response."""
 
     xbee_device = zigpy_device_from_quirk(XBeeSensor)
+    assert xbee_device.model == "XBee2"
 
     digital_listeners = [
         ClusterListener(xbee_device.endpoints[e].on_off) for e in range(0xD0, 0xDF)
