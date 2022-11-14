@@ -482,7 +482,7 @@ class XBeeRemoteATResponse(LocalDataCluster):
     }
 
 
-class DigitalIOCluster(LocalDataCluster, BinaryInput):
+class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
     """Digital IO Cluster for the XBee."""
 
     cluster_id = XBEE_IO_CLUSTER
@@ -538,7 +538,7 @@ class DigitalIOCluster(LocalDataCluster, BinaryInput):
 
 
 # pylint: disable=too-many-ancestors
-class EventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
+class XBeeEventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
     """A cluster with cluster_id which is allowed to send events."""
 
     attributes = {}
@@ -557,7 +557,7 @@ class EventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
     )
 
 
-class SerialDataCluster(LocalDataCluster):
+class XBeeSerialDataCluster(LocalDataCluster):
     """Serial Data Cluster for the XBee."""
 
     cluster_id = XBEE_DATA_CLUSTER
@@ -652,8 +652,12 @@ class XBeeCommon(CustomDevice):
                 OUTPUT_CLUSTERS: [XBeeRemoteATRequest],
             },
             XBEE_DATA_ENDPOINT: {
-                INPUT_CLUSTERS: [DigitalIOCluster, SerialDataCluster, XBeeBasic],
-                OUTPUT_CLUSTERS: [SerialDataCluster, EventRelayCluster],
+                INPUT_CLUSTERS: [
+                    XBeeDigitalIOCluster,
+                    XBeeSerialDataCluster,
+                    XBeeBasic,
+                ],
+                OUTPUT_CLUSTERS: [XBeeSerialDataCluster, XBeeEventRelayCluster],
             },
         },
         "manufacturer": "Digi",
